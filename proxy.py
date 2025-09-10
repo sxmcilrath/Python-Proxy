@@ -35,3 +35,32 @@ def pe(*args, **kwargs):
 
 
 ### Your code here! ###
+
+# Need some sort of main function to define progression:
+    # need to create some sort of cache object 
+    # then need to listen
+    # loop to handle connections
+        ## Accept the connection
+        ## Create thread and assign it the acception fd as it's argument -> send it to a thread handler
+    # close the listen
+
+#Need a thread handler
+    #think it takes the argument passed in and gets the fd
+    #sends it to the http transaction
+    #closes the fd
+    
+#Http transaction
+    #takes a fd as an input 
+    #read client request
+    #parse the request
+    #check in cache
+        #check for URL in cache
+        #if miss
+            #build request
+            #send request/open connection to server
+            #read server response
+            #send to client 
+            #store in cache
+        #if hit
+            #writes cached object directly to client
+# fmseflksemflske
