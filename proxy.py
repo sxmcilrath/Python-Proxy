@@ -3,6 +3,8 @@
 # Add your own imports as needed
 import sys
 import hashlib
+import socket
+import threading
 
 
 # Feel free to substitute this as the User-Agent header in your outgoing requests
@@ -12,6 +14,9 @@ USER_AGENT = b'Mozilla/5.0 (X11; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/5
 # files or responses into a single bytes object, which may not be particularly
 # good when I'm trying to listen to di.fm using the proxy.
 BUFSIZ = 4096
+
+# GLOBAL VARS
+cache = {}
 
 
 # Some helper functions
@@ -38,11 +43,33 @@ def pe(*args, **kwargs):
 
 # Need some sort of main function to define progression:
     # need to create some sort of cache object 
+        #cache_line object 
+        #or could just be a dictionary, pohly said wasn't too much constraint. 
+        #just make a hashmap with url and cached file
     # then need to listen
     # loop to handle connections
         ## Accept the connection
         ## Create thread and assign it the acception fd as it's argument -> send it to a thread handler
     # close the listen
+def main(port):
+
+    sock = socket.socket()
+    sock.bind(('', port))
+    sock.listen() #backlog val default
+
+    while True:
+        accept = sock.accept()
+
+        #will need to pass to something else 
+        t = threading.Thread(target=thread_handler, args=(accept))
+
+        
+
+def thread_handler(accept):
+
+
+# if __name__ == "__main__":
+#     main()
 
 #Need a thread handler
     #think it takes the argument passed in and gets the fd
