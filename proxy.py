@@ -55,18 +55,13 @@ def main(port):
 
     sock = socket.socket()
     sock.bind(('', port))
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     sock.listen() #backlog val default
 
     while True:
-        accept = sock.accept()
-
-        #will need to pass to something else 
-        t = threading.Thread(target=thread_handler, args=(accept))
-
-        
-
-def thread_handler(accept):
-
+        conn, addr = sock.accept()
+        t = threading.Thread(target=http_transaction, args=(conn, addr))
+        t.start()
 
 # if __name__ == "__main__":
 #     main()
@@ -90,4 +85,26 @@ def thread_handler(accept):
             #store in cache
         #if hit
             #writes cached object directly to client
-# fmseflksemflske
+def http_transaction(conn, addr):
+    #parse requests
+    data = conn.recv(BUFSIZ)
+    #err check
+    if not data:
+        #NEED TO INSERT PERROR equiv
+        conn.close()
+        return
+    
+    first_line, remains = data.split(b"\r\n",1)
+    method, link, version = first_line.split(b" ", 2)
+    assert method == "GET" #sanity check
+
+    #check cache
+    try:
+        c_resp = open(f"cache/{cachefile(link)}")
+    except Exception as ex:
+        create_request()
+    #cleanup
+    conn.close()
+
+def create_request():
+    return None
