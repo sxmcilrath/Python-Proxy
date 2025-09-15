@@ -5,6 +5,7 @@ import sys
 import hashlib
 import socket
 import threading
+import os
 
 
 # Feel free to substitute this as the User-Agent header in your outgoing requests
@@ -85,7 +86,7 @@ def main(port):
             #store in cache
         #if hit
             #writes cached object directly to client
-def http_transaction(conn, addr):
+def http_transaction(conn: socket.socket, addr):
     #parse requests
     data = conn.recv(BUFSIZ)
     #err check
@@ -100,11 +101,30 @@ def http_transaction(conn, addr):
 
     #check cache
     try:
-        c_resp = open(f"cache/{cachefile(link)}")
+        cache_file = open(f"cache/{cachefile(link)}", "r")
+        cache_msg = cache_file.read(BUFSIZ)
+        conn.sendall(cache_msg)
+        return
     except Exception as ex:
-        create_request()
+        create_request(link)
     #cleanup
     conn.close()
 
-def create_request():
+def create_request(link: bytes):
+
+    trash, remainder = link.split(b"http://", 1)
+
+    #get port and host
+    port = 80
+    host = b"Host: "
+    if b":" in remainder:
+        port =  remainder[remainder.find(b":")+1 : remainder.find(b"/")]
+        host += remainder.split(b":", 1)[0] + b"\r\n"
+    else:
+        host = remainder.split(b"/", 1)[0] + b"\r\n"
+
+
+    #get host
+    
+    
     return None
