@@ -101,12 +101,12 @@ def http_transaction(conn: socket.socket, addr):
 
     #check cache
     try:
-        cache_file = open(f"cache/{cachefile(link)}", "r")
+        cache_file = open(f"cache/{cachefile(link)}", "rb")
         cache_msg = cache_file.read(BUFSIZ)
         conn.sendall(cache_msg)
         return
     except Exception as ex:
-        create_request(link)
+        request, port = create_request(link)
     #cleanup
     conn.close()
 
@@ -114,17 +114,31 @@ def create_request(link: bytes):
 
     trash, remainder = link.split(b"http://", 1)
 
-    #get port and host
-    port = 80
-    host = b"Host: "
-    if b":" in remainder:
-        port =  remainder[remainder.find(b":")+1 : remainder.find(b"/")]
-        host += remainder.split(b":", 1)[0] + b"\r\n"
-    else:
-        host = remainder.split(b"/", 1)[0] + b"\r\n"
+    #static headers
+    connection_h = b"Connection: close\r\n"
+    proxy_h = b"Proxy-Connection: close\r\n"
+    user_h = b"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0\r\n"
+
+    # find host port path
+    if b":" in remainder:  
+        colon_pos = remainder.find(b":")
+        slash_pos = remainder.find(b"/", colon_pos)
+
+        host = remainder[:colon_pos]
+        port_h = int(remainder[colon_pos+1:slash_pos])
+        path = remainder[slash_pos:] if slash_pos != -1 else b"/"
+    else: 
+        slash_pos = remainder.find(b"/")
+
+        host = remainder[:slash_pos] if slash_pos != -1 else remainder
+        port_h = 80
+        path = remainder[slash_pos:] if slash_pos != -1 else b"/"
+
+    # get hdr
+    get_h = b"GET " + path + b" HTTP/1.0\r\n"
+
+    # host hdr
+    host_h = b"Host: " + host + b"\r\n"
 
 
-    #get host
-    
-    
-    return None
+    return get_h + host_h + user_h + connection_h + proxy_h + b"\r\n", port_h
