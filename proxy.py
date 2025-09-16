@@ -42,6 +42,12 @@ def pe(*args, **kwargs):
 
 ### Your code here! ###
 
+def make_cache():
+    try:
+        os.makedirs("cache", exist_ok=True)
+    except Exception as e:
+        pe("Error making cache", e)
+
 # Need some sort of main function to define progression:
     # need to create some sort of cache object 
         #cache_line object 
@@ -52,20 +58,8 @@ def pe(*args, **kwargs):
         ## Accept the connection
         ## Create thread and assign it the acception fd as it's argument -> send it to a thread handler
     # close the listen
-def main(port):
 
-    sock = socket.socket()
-    sock.bind(('', port))
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-    sock.listen() #backlog val default
 
-    while True:
-        conn, addr = sock.accept()
-        t = threading.Thread(target=http_transaction, args=(conn, addr))
-        t.start()
-
-# if __name__ == "__main__":
-#     main()
 
 #Need a thread handler
     #think it takes the argument passed in and gets the fd
@@ -102,11 +96,16 @@ def http_transaction(conn: socket.socket, addr):
     #check cache
     try:
         cache_file = open(f"cache/{cachefile(link)}", "rb")
-        cache_msg = cache_file.read(BUFSIZ)
-        conn.sendall(cache_msg)
-        return
+        while True:
+            chunk = cache_file.read(BUFSIZ)
+            if not chunk:
+                break
+            conn.sendall(chunk)
+
     except Exception as ex:
-        request, port = create_request(link)
+        request, host, port = create_request(link)
+        server_conn = send_request(request, host.decode(), port)
+        read_response(server_conn, conn, link)
     #cleanup
     conn.close()
 
@@ -141,4 +140,30 @@ def create_request(link: bytes):
     host_h = b"Host: " + host + b"\r\n"
 
 
-    return get_h + host_h + user_h + connection_h + proxy_h + b"\r\n", port_h
+    return get_h + host_h + user_h + connection_h + proxy_h + b"\r\n", host, port_h
+
+def send_request(request, host, port):
+    sock = socket.socket()
+    sock.connect((host, port))
+    sock.sendall(request)
+    return sock
+
+def read_response(server_conn: socket.socket, client_conn: socket.socket, url):
+    total_resp = b""
+
+    #read bytes
+    while True:
+        bytes = server_conn.recv(BUFSIZ)
+        if not bytes:
+            break
+        client_conn.sendall(bytes)
+        total_resp += bytes
+
+    #write to file
+    with open(f"cache/{cachefile(url)}", "wb") as f:
+        f.write(total_resp)
+    return
+
+
+
+    
